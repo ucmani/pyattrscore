@@ -9,7 +9,7 @@ Version: 1.0.0
 License: MIT
 """
 
-__version__ = "1.0.0"
+__version__ = "0.0.3"
 __author__ = "Mani Gidijala"
 __email__ = ""
 __license__ = "MIT"
@@ -36,6 +36,7 @@ from .exponential_decay import ExponentialDecayAttribution
 from .linear_decay import LinearDecayAttribution
 from .u_shaped import UShapedAttribution
 from .windowed_first_touch import WindowedFirstTouchAttribution
+from .football import FootballAttribution, FootballAttributionConfig, FootballMetrics, ChannelArchetype, FootballRole
 
 # Import utilities
 from .utils import (
@@ -90,6 +91,11 @@ __all__ = [
     "LinearDecayAttribution",
     "UShapedAttribution",
     "WindowedFirstTouchAttribution",
+    "FootballAttribution",
+    "FootballAttributionConfig",
+    "FootballMetrics",
+    "ChannelArchetype",
+    "FootballRole",
     
     # Utilities
     "validate_dataframe_structure",
@@ -116,6 +122,7 @@ ATTRIBUTION_MODELS = {
     'linear_decay': LinearDecayAttribution,
     'u_shaped': UShapedAttribution,
     'windowed_first_touch': WindowedFirstTouchAttribution,
+    'football': FootballAttribution,
 }
 
 def get_model(model_name: str, config: AttributionConfig = None):
@@ -204,7 +211,6 @@ PACKAGE_INFO = {
     'author': __author__,
     'email': __email__,
     'license': __license__,
-    'url': 'https://github.com/pyattrscore/pyattrscore',
     'keywords': ['attribution', 'marketing', 'analytics', 'conversion', 'touchpoint'],
     'classifiers': [
         'Development Status :: 5 - Production/Stable',

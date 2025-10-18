@@ -28,17 +28,10 @@ if sys.version_info < (3, 8):
 setup(
     name='pyattrscore',
     version=get_version(),
-    author='PyAttrScore Team',
-    author_email='support@pyattrscore.com',
+    author='Mani Gidijala',
     description='Python Attribution Modeling Package for Marketing Analytics',
     long_description=long_description,
     long_description_content_type='text/markdown',
-    url='https://github.com/pyattrscore/pyattrscore',
-    project_urls={
-        'Bug Reports': 'https://github.com/pyattrscore/pyattrscore/issues',
-        'Source': 'https://github.com/pyattrscore/pyattrscore',
-        'Documentation': 'https://pyattrscore.readthedocs.io/',
-    },
     packages=find_packages(exclude=['tests*', 'docs*', 'examples*']),
     package_data={
         'pyattrscore': ['config.yaml'],
@@ -129,15 +122,5 @@ setup(
             'dask[dataframe]>=2021.0.0',
         ],
     },
-    entry_points={
-        'console_scripts': [
-            'pyattrscore=pyattrscore.cli:main',
-        ],
-    },
     zip_safe=False,
-    test_suite='tests',
-    tests_require=[
-        'pytest>=6.0.0',
-        'pytest-cov>=2.10.0',
-    ],
 )
