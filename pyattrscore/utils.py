@@ -28,8 +28,12 @@ def validate_dataframe_structure(df: pd.DataFrame, required_columns: List[str]) 
     Raises:
         InvalidInputError: If DataFrame is invalid or missing required columns
     """
-    if df is None or df.empty:
-        raise InvalidInputError("DataFrame cannot be None or empty")
+    if df is None:
+        raise InvalidInputError("DataFrame cannot be None")
+    
+    if df.empty:
+        from .exceptions import InsufficientDataError
+        raise InsufficientDataError("DataFrame cannot be empty")
     
     missing_columns = [col for col in required_columns if col not in df.columns]
     if missing_columns:
@@ -321,7 +325,20 @@ def create_attribution_result_dataframe(
     
     # Add attribution value if conversion_value exists
     if 'conversion_value' in result_df.columns:
-        result_df['attribution_value'] = result_df['attribution_score'] * result_df['conversion_value'].fillna(0)
+        # For each user, distribute the conversion value based on attribution scores
+        result_df['attribution_value'] = 0.0
+        for user_id in result_df['user_id'].unique():
+            user_mask = result_df['user_id'] == user_id
+            user_data = result_df[user_mask]
+            
+            # Get the total conversion value for this user
+            total_conversion_value = user_data['conversion_value'].fillna(0).sum()
+            
+            # Distribute the conversion value based on attribution scores
+            if total_conversion_value > 0:
+                result_df.loc[user_mask, 'attribution_value'] = (
+                    result_df.loc[user_mask, 'attribution_score'] * total_conversion_value
+                )
     
     logger.debug(f"Created attribution result DataFrame with {len(result_df)} rows")
     return result_df

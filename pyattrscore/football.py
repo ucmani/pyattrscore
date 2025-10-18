@@ -60,10 +60,10 @@ class FootballAttributionConfig(AttributionConfig):
     scorer_weight: float = 0.25
     assister_weight: float = 0.20
     key_passer_weight: float = 0.15
-    most_passes_weight: float = 0.15
+    most_passes_weight: float = 0.14
     most_minutes_weight: float = 0.10
     most_dribbles_weight: float = 0.10
-    participant_weight: float = 0.05
+    participant_weight: float = 0.06
     
     # Baseline weight for all touchpoints
     baseline_weight: float = 0.1
@@ -79,14 +79,43 @@ class FootballAttributionConfig(AttributionConfig):
         """Initialize with validation and default values"""
         super().__init__(**data)
         
-        # Validate weights sum appropriately
+        # If only some weights are provided, adjust others proportionally
+        provided_weights = set(data.keys()) & {
+            'scorer_weight', 'assister_weight', 'key_passer_weight',
+            'most_passes_weight', 'most_minutes_weight', 'most_dribbles_weight',
+            'participant_weight'
+        }
+        
+        if provided_weights and len(provided_weights) < 7:
+            # Some weights were provided but not all - adjust the others
+            total_provided = sum(getattr(self, weight) for weight in provided_weights)
+            remaining_weight = 1.0 - total_provided
+            
+            if remaining_weight < 0:
+                raise ConfigurationError(
+                    f"Provided weights sum to {total_provided}, which exceeds 1.0"
+                )
+            
+            # Distribute remaining weight among non-provided weights
+            non_provided_weights = {
+                'scorer_weight', 'assister_weight', 'key_passer_weight',
+                'most_passes_weight', 'most_minutes_weight', 'most_dribbles_weight',
+                'participant_weight'
+            } - provided_weights
+            
+            if non_provided_weights and remaining_weight > 0:
+                weight_per_remaining = remaining_weight / len(non_provided_weights)
+                for weight_name in non_provided_weights:
+                    setattr(self, weight_name, weight_per_remaining)
+        
+        # Validate final weights sum appropriately
         total_weight = (
             self.scorer_weight + self.assister_weight + self.key_passer_weight +
             self.most_passes_weight + self.most_minutes_weight +
             self.most_dribbles_weight + self.participant_weight
         )
         
-        if abs(total_weight - 1.0) > 0.001:
+        if abs(total_weight - 1.0) > 1e-6:
             raise ConfigurationError(
                 f"Role weights must sum to 1.0, got {total_weight}"
             )
