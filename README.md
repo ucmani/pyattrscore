@@ -6,11 +6,12 @@
 [![Build Status](https://github.com/pyattrscore/pyattrscore/workflows/CI/badge.svg)](https://github.com/pyattrscore/pyattrscore/actions)
 [![Coverage Status](https://codecov.io/gh/pyattrscore/pyattrscore/branch/main/graph/badge.svg)](https://codecov.io/gh/pyattrscore/pyattrscore)
 
-PyAttrScore is a production-grade Python package designed to calculate marketing attribution scores using multiple models. It includes validation, logging, error handling, and comprehensive testing modules, making it ready for integration into analytics pipelines to measure channel effectiveness.
+PyAttrScore is a Python package designed to calculate marketing attribution scores using multiple models. It includes validation, logging, error handling, and comprehensive testing modules, making it ready for integration into analytics pipelines to measure channel effectiveness.
 
 ## 🚀 Features
 
-- **Multiple Attribution Models**: First Touch, Last Touch, Linear, Time Decay (Exponential & Linear), U-Shaped, and Windowed First Touch
+- **Multiple Attribution Models**: First Touch, Last Touch, Linear, Time Decay (Exponential & Linear), U-Shaped, Windowed First Touch, and **Football-Inspired Attribution**
+- **🏈 Football Attribution**: Revolutionary model that treats marketing channels like football players with roles (Scorer, Assister, Key Passer) and calculates Channel Impact Score (CIS)
 - **Production Ready**: Comprehensive error handling, logging, and validation
 - **Flexible Configuration**: YAML-based configuration with customizable parameters
 - **Data Validation**: Built-in Pydantic models for robust data validation
@@ -43,6 +44,24 @@ pip install -e ".[dev]"
 ```
 
 ## 🏃‍♂️ Quick Start
+
+### 🏈 Football Attribution Demo
+
+Experience the revolutionary Football-Inspired Attribution model:
+
+```bash
+# Run the football attribution demo
+python main.py --football
+
+# Compare all attribution models
+python main.py --compare
+
+# Run detailed football analysis
+python football_example.py
+
+# Use sample data
+python main.py --football --data sample_data.csv
+```
 
 ### Basic Usage
 
@@ -95,6 +114,7 @@ from pyattrscore import (
     LinearAttribution,
     ExponentialDecayAttribution,
     UShapedAttribution,
+    FootballAttribution,
     get_model
 )
 
@@ -106,7 +126,11 @@ results_linear = linear_model.calculate_attribution(data)
 decay_model = get_model('exponential_decay', config)
 results_decay = decay_model.calculate_attribution(data)
 
-# Method 3: U-Shaped with custom weights
+# Method 3: Football Attribution
+football_model = get_model('football')
+results_football = football_model.calculate_attribution(data)
+
+# Method 4: U-Shaped with custom weights
 u_shaped_model = UShapedAttribution(
     config, 
     first_touch_weight=0.3, 
@@ -219,17 +243,97 @@ results = model.calculate_attribution(data)
 - Time-bounded first touch analysis
 - Focusing on relevant touchpoints
 
+### 7. 🏈 Football-Inspired Attribution
+A revolutionary attribution model that treats marketing channels like football players, assigning roles and calculating Channel Impact Score (CIS) based on team play concepts.
+
+```python
+from pyattrscore import FootballAttribution, FootballAttributionConfig
+
+# Configure the football model
+config = FootballAttributionConfig(
+    attribution_window_days=30,
+    scorer_weight=0.25,      # Final conversion touchpoint
+    assister_weight=0.20,    # Setup touchpoint before conversion
+    key_passer_weight=0.15,  # Journey initiator
+    most_passes_weight=0.15, # Most frequent engagement
+    most_minutes_weight=0.10, # Longest engagement time
+    most_dribbles_weight=0.10, # Cold lead revival
+    participant_weight=0.05,  # Supporting touchpoint
+    baseline_weight=0.1,
+    cold_lead_threshold_days=7
+)
+
+model = FootballAttribution(config)
+results = model.calculate_attribution(data)
+
+# Get team performance summary
+summary = model.get_channel_performance_summary(results)
+print(summary)
+```
+
+**Football Roles:**
+- **Scorer**: Final conversion touchpoint (like a striker finishing the goal)
+- **Assister**: Setup touchpoint before conversion (like a midfielder creating the opportunity)
+- **Key Passer**: Journey initiator (like a defender starting the play)
+- **Most Passes**: Channel with most frequent engagement
+- **Most Minutes**: Channel with longest engagement time
+- **Most Dribbles**: Channel that revives cold leads
+
+**Channel Archetypes:**
+- **Generator**: Creates awareness, starts plays (e.g., Organic Search, Social Media)
+- **Assister**: Nurtures and sets up conversions (e.g., Email, Paid Search)
+- **Closer**: Finishes conversions (e.g., Direct, Referral)
+- **Participant**: Supporting role
+
+**Use Cases:**
+- Team-based marketing attribution
+- Intuitive stakeholder communication using football metaphors
+- Role-based channel optimization
+- Understanding channel collaboration in conversion journeys
+- Budget allocation based on "team performance"
+
+**Example Output:**
+```
+🏈 FOOTBALL ATTRIBUTION RESULTS
+Channel         Role                    CIS Score    Archetype
+organic_search  key_passer, most_passes    34.7%     generator
+paid_search     assister                   26.3%     assister  
+referral        scorer, most_minutes       39.0%     closer
+```
+
+**Channel Impact Score (CIS) Formula:**
+```
+CIS = baseline_weight + (1 - baseline_weight) × (role_weights_sum)
+
+Where role_weights_sum = Σ(role_weight × role_indicator)
+```
+
 ## ⚙️ Configuration
 
 ### Using Configuration Objects
 
 ```python
-from pyattrscore import AttributionConfig
+from pyattrscore import AttributionConfig, FootballAttributionConfig
 
+# Standard configuration
 config = AttributionConfig(
     attribution_window_days=30,
     decay_rate=0.6,
     include_non_converting_paths=False
+)
+
+# Football-specific configuration
+football_config = FootballAttributionConfig(
+    attribution_window_days=30,
+    scorer_weight=0.25,
+    assister_weight=0.20,
+    baseline_weight=0.1,
+    channel_archetypes={
+        'organic_search': 'generator',
+        'paid_search': 'assister',
+        'direct': 'closer',
+        'referral': 'closer'
+    }
 )
 ```
 
@@ -248,52 +352,66 @@ models:
   exponential_decay:
     decay_rate: 0.5
     use_attribution_window: true
+    
+  football:
+    role_weights:
+      scorer_weight: 0.25
+      assister_weight: 0.20
+      key_passer_weight: 0.15
+    baseline_weight: 0.1
+    cold_lead_threshold_days: 7
+    channel_archetypes:
+      organic_search: "generator"
+      paid_search: "assister"
+      direct: "closer"
 ```
 
 ```python
 import yaml
-from pyattrscore import AttributionConfig
+from pyattrscore import AttributionConfig, FootballAttributionConfig
 
 with open('config.yaml', 'r') as f:
     config_dict = yaml.safe_load(f)
 
 config = AttributionConfig(**config_dict['global'])
+football_config = FootballAttributionConfig(**config_dict['models']['football'])
 ```
 
 ## 📈 Advanced Usage
 
-### Batch Processing Multiple Users
+### Football Attribution Analysis
 
 ```python
+from pyattrscore import FootballAttribution
 import pandas as pd
-from pyattrscore import LinearAttribution
 
-# Large dataset with multiple users
-large_data = pd.DataFrame([
-    # User 1 journey
-    {'user_id': 'user_001', 'touchpoint_id': 'tp_001', 'channel': 'email', 
-     'timestamp': datetime(2023, 1, 1), 'conversion': False},
-    {'user_id': 'user_001', 'touchpoint_id': 'tp_002', 'channel': 'search', 
-     'timestamp': datetime(2023, 1, 2), 'conversion': True, 'conversion_value': 100.0},
-    
-    # User 2 journey
-    {'user_id': 'user_002', 'touchpoint_id': 'tp_003', 'channel': 'social', 
-     'timestamp': datetime(2023, 1, 1), 'conversion': False},
-    {'user_id': 'user_002', 'touchpoint_id': 'tp_004', 'channel': 'email', 
-     'timestamp': datetime(2023, 1, 3), 'conversion': True, 'conversion_value': 200.0},
-])
+# Load your data
+data = pd.read_csv('sample_data.csv')
 
-model = LinearAttribution()
-results = model.calculate_attribution(large_data)
+# Initialize football model
+model = FootballAttribution()
+results = model.calculate_attribution(data)
 
-# Analyze results by channel
-channel_performance = results.groupby('channel').agg({
-    'attribution_score': 'sum',
-    'attribution_value': 'sum',
-    'user_id': 'nunique'
-}).round(4)
+# Analyze team performance
+summary = model.get_channel_performance_summary(results)
 
-print(channel_performance)
+# Top performers
+print("🥅 Top Scorers (Closers):")
+top_scorers = summary.nlargest(3, 'channel_goals')
+print(top_scorers[['channel', 'channel_goals', 'channel_archetype']])
+
+print("\n🎯 Top Assisters (Setup Channels):")
+top_assisters = summary.nlargest(3, 'channel_assists')
+print(top_assisters[['channel', 'channel_assists', 'channel_archetype']])
+
+# Team formation analysis
+print("\n🏟️ Team Formation Performance:")
+archetype_performance = summary.groupby('channel_archetype').agg({
+    'channel_goals': 'sum',
+    'channel_assists': 'sum',
+    'attribution_score': 'sum'
+}).round(2)
+print(archetype_performance)
 ```
 
 ### Model Comparison
@@ -301,8 +419,8 @@ print(channel_performance)
 ```python
 from pyattrscore import get_model, list_models
 
-# Compare multiple models
-models_to_compare = ['first_touch', 'last_touch', 'linear', 'u_shaped']
+# Compare multiple models including football
+models_to_compare = ['first_touch', 'last_touch', 'linear', 'u_shaped', 'football']
 results_comparison = {}
 
 for model_name in models_to_compare:
@@ -315,23 +433,50 @@ for model_name in models_to_compare:
 
 comparison_df = pd.DataFrame(results_comparison).fillna(0)
 print(comparison_df)
+
+# Football-specific analysis
+if 'football' in models_to_compare:
+    football_model = get_model('football')
+    football_results = football_model.calculate_attribution(data)
+    team_summary = football_model.get_channel_performance_summary(football_results)
+    print("\n🏈 Team Performance Summary:")
+    print(team_summary[['channel', 'channel_archetype', 'channel_goals', 'channel_assists']])
 ```
 
-### Custom Logging Configuration
+### Batch Processing Multiple Users
 
 ```python
-from pyattrscore import configure_logging
+import pandas as pd
+from pyattrscore import FootballAttribution
 
-# Configure logging
-configure_logging(
-    level="DEBUG",
-    log_file="attribution_analysis.log",
-    json_format=True
-)
+# Large dataset with multiple users
+large_data = pd.DataFrame([
+    # User 1 journey
+    {'user_id': 'user_001', 'touchpoint_id': 'tp_001', 'channel': 'email', 
+     'timestamp': datetime(2023, 1, 1), 'conversion': False, 'engagement_time': 30.0},
+    {'user_id': 'user_001', 'touchpoint_id': 'tp_002', 'channel': 'search', 
+     'timestamp': datetime(2023, 1, 2), 'conversion': True, 'conversion_value': 100.0, 'engagement_time': 60.0},
+    
+    # User 2 journey
+    {'user_id': 'user_002', 'touchpoint_id': 'tp_003', 'channel': 'social', 
+     'timestamp': datetime(2023, 1, 1), 'conversion': False, 'engagement_time': 25.0},
+    {'user_id': 'user_002', 'touchpoint_id': 'tp_004', 'channel': 'email', 
+     'timestamp': datetime(2023, 1, 3), 'conversion': True, 'conversion_value': 200.0, 'engagement_time': 45.0},
+])
 
-# Now all PyAttrScore operations will be logged
-model = LinearAttribution()
-results = model.calculate_attribution(data)
+model = FootballAttribution()
+results = model.calculate_attribution(large_data)
+
+# Analyze results by channel
+channel_performance = results.groupby('channel').agg({
+    'attribution_score': 'sum',
+    'attribution_value': 'sum',
+    'user_id': 'nunique',
+    'channel_goals': 'first',
+    'channel_assists': 'first'
+}).round(4)
+
+print(channel_performance)
 ```
 
 ## 🔧 Data Requirements
@@ -349,6 +494,24 @@ Your input DataFrame must contain these columns:
 
 - `conversion` (bool): Whether this touchpoint led to a conversion
 - `conversion_value` (float): Monetary value of the conversion
+- `engagement_time` (float): Time spent on the touchpoint (recommended for Football Attribution)
+
+### Sample Data File
+
+Use the provided `sample_data.csv` for testing:
+
+```python
+import pandas as pd
+from pyattrscore import FootballAttribution
+
+# Load sample data
+data = pd.read_csv('sample_data.csv')
+print(data.head())
+
+# Run football attribution
+model = FootballAttribution()
+results = model.calculate_attribution(data)
+```
 
 ### Data Validation
 
@@ -374,12 +537,16 @@ results.columns
 # ['user_id', 'touchpoint_id', 'channel', 'timestamp', 'conversion',
 #  'attribution_score', 'attribution_percentage', 'model_name', 'attribution_value']
 
+# Football-specific columns (when using FootballAttribution)
+# ['football_roles', 'channel_archetype', 'channel_goals', 'channel_assists', 
+#  'channel_passes', 'channel_minutes', 'channel_expected_goals']
+
 # Example output
 print(results.head())
-#    user_id touchpoint_id      channel  ... attribution_percentage model_name  attribution_value
-# 0  user_001       tp_001        email  ...                  33.33     Linear              33.33
-# 1  user_001       tp_002  social_media ...                  33.33     Linear              33.33
-# 2  user_001       tp_003       search  ...                  33.34     Linear              33.34
+#    user_id touchpoint_id      channel  ... football_roles channel_archetype
+# 0  user_001       tp_001        email  ...   [assister]        assister
+# 1  user_001       tp_002  social_media ...   [key_passer]      generator
+# 2  user_001       tp_003       search  ...   [scorer]          closer
 ```
 
 ## 🧪 Testing
@@ -393,64 +560,60 @@ pytest
 # Run with coverage
 pytest --cov=pyattrscore --cov-report=html
 
-# Run specific test file
-pytest tests/test_linear.py
+# Run football attribution tests
+pytest tests/test_football.py
 
 # Run with verbose output
 pytest -v
 ```
 
-## 🤝 Contributing
+## 🏈 Football Attribution Examples
 
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+### Example 1: Specification Example
+```python
+# The classic example from the specification
+data = pd.DataFrame({
+    'user_id': ['customer_1', 'customer_1', 'customer_1'],
+    'touchpoint_id': ['tp_1', 'tp_2', 'tp_3'],
+    'channel': ['organic_search', 'paid_search', 'referral'],
+    'timestamp': [
+        datetime(2024, 1, 1, 10, 0),
+        datetime(2024, 1, 2, 11, 0),
+        datetime(2024, 1, 3, 12, 0)
+    ],
+    'conversion': [False, False, True],
+    'conversion_value': [None, None, 100.0],
+    'engagement_time': [30.0, 45.0, 60.0]
+})
 
-### Development Setup
+model = FootballAttribution()
+results = model.calculate_attribution(data)
 
-```bash
-git clone https://github.com/pyattrscore/pyattrscore.git
-cd pyattrscore
-pip install -e ".[dev]"
-pre-commit install
+# Expected results:
+# Referral (Closer): ~39%
+# Paid Search (Assister): ~26%  
+# Organic Search (Generator): ~35%
 ```
 
-### Running Tests
+### Example 2: Multi-Customer Analysis
+```python
+# Run the comprehensive example
+python football_example.py
 
-```bash
-pytest
-black .
-flake8
-mypy pyattrscore
+# This will show:
+# - Role assignments for each touchpoint
+# - Channel performance metrics
+# - Team formation analysis
+# - Football analytics insights
 ```
 
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🆘 Support
-
-- **Documentation**: [https://pyattrscore.readthedocs.io/](https://pyattrscore.readthedocs.io/)
-- **Issues**: [GitHub Issues](https://github.com/pyattrscore/pyattrscore/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/pyattrscore/pyattrscore/discussions)
-
 ## 🙏 Acknowledgments
 
 - Built with [pandas](https://pandas.pydata.org/), [numpy](https://numpy.org/), and [pydantic](https://pydantic-docs.helpmanual.io/)
-- Inspired by marketing attribution research and industry best practices
+- Inspired by marketing attribution research and football analytics
 - Thanks to all contributors and the open-source community
 
-## 📚 Citation
-
-If you use PyAttrScore in your research, please cite:
-
-```bibtex
-@software{pyattrscore,
-  title={PyAttrScore: Python Attribution Modeling Package},
-  author={PyAttrScore Team},
-  year={2023},
-  url={https://github.com/pyattrscore/pyattrscore}
-}
-```
-
----
-
-**Made with ❤️ for the marketing analytics community**

@@ -89,6 +89,58 @@ models:
     use_attribution_window: true
     # Whether to require the first touch to be within the window
     strict_window: true
+    
+  # Football-Inspired Attribution
+  football:
+    description: "Assigns football roles and calculates Channel Impact Score (CIS) based on team play concepts"
+    requires_conversion: true
+    min_touchpoints: 1
+    # Use attribution window from global settings
+    use_attribution_window: true
+    
+    # Role weights for CIS calculation (must sum to 1.0)
+    role_weights:
+      scorer_weight: 0.25          # Final conversion touchpoint
+      assister_weight: 0.20        # Setup touchpoint before conversion
+      key_passer_weight: 0.15      # Starts the conversion build-up
+      most_passes_weight: 0.15     # Most frequent engagement
+      most_minutes_weight: 0.10    # Longest engagement time
+      most_dribbles_weight: 0.10   # Revives cold leads
+      participant_weight: 0.05     # Supporting touchpoint
+    
+    # Baseline weight for all touchpoints
+    baseline_weight: 0.1
+    
+    # Time thresholds
+    cold_lead_threshold_days: 7    # Days to consider a lead "cold"
+    engagement_time_weight: 1.0    # Weight for engagement time calculation
+    
+    # Default channel archetype mapping
+    channel_archetypes:
+      organic_search: "generator"    # Creates awareness, starts plays
+      paid_search: "assister"       # Nurtures and sets up conversions
+      social_media: "generator"     # Creates awareness, starts plays
+      email: "assister"             # Nurtures and sets up conversions
+      direct: "closer"              # Finishes conversions
+      referral: "closer"            # Finishes conversions
+      display: "generator"          # Creates awareness, starts plays
+      video: "assister"             # Nurtures and sets up conversions
+      sms: "assister"               # Nurtures and sets up conversions
+      affiliate: "closer"           # Finishes conversions
+      
+    # Football metrics configuration
+    metrics:
+      # Expected Goals (xG) calculation weights
+      conversion_xg_weight: 0.8     # Weight for actual conversions
+      non_conversion_xg_weight: 0.1 # Weight for non-conversions
+      
+      # Expected Assists (xA) calculation weights
+      assister_xa_weight: 0.7       # Weight for assister role
+      key_passer_xa_weight: 0.3     # Weight for key passer role
+      
+      # Performance calculation settings
+      passes_per_100_multiplier: 100
+      enable_advanced_metrics: true
 
 # Data validation settings
 validation:
