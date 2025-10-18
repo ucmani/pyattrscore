@@ -1,0 +1,217 @@
+# PyAttrScore Configuration File
+# This file contains default configuration parameters for attribution models
+
+# Global Settings
+global:
+  # Default attribution window in days
+  attribution_window_days: 30
+  
+  # Whether to include non-converting user journeys in analysis
+  include_non_converting_paths: false
+  
+  # Minimum number of touchpoints required for attribution
+  min_touchpoints: 1
+  
+  # Default logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+  log_level: "INFO"
+  
+  # Whether to validate attribution scores sum to 1.0
+  validate_scores: true
+  
+  # Tolerance for score validation
+  score_validation_tolerance: 0.000001
+
+# Model-specific configurations
+models:
+  
+  # First Touch Attribution
+  first_touch:
+    description: "Assigns 100% credit to the first interaction in the conversion path"
+    requires_conversion: true
+    min_touchpoints: 1
+    
+  # Last Touch Attribution  
+  last_touch:
+    description: "Assigns 100% credit to the last interaction in the conversion path"
+    requires_conversion: true
+    min_touchpoints: 1
+    
+  # Linear Attribution
+  linear:
+    description: "Distributes credit equally among all touches within the attribution window"
+    requires_conversion: true
+    min_touchpoints: 1
+    # Use attribution window from global settings
+    use_attribution_window: true
+    
+  # Exponential Time Decay Attribution
+  exponential_decay:
+    description: "Credits interactions based on exponential decay where recent touches receive higher credit"
+    requires_conversion: true
+    min_touchpoints: 1
+    # Decay rate (0-1, where 1 = no decay, 0 = maximum decay)
+    decay_rate: 0.5
+    # Use attribution window from global settings
+    use_attribution_window: true
+    # Reference point for decay calculation ('conversion' or 'latest')
+    decay_reference: "conversion"
+    
+  # Linear Time Decay Attribution
+  linear_decay:
+    description: "Credits interactions linearly based on recency within the attribution window"
+    requires_conversion: true
+    min_touchpoints: 1
+    # Decay rate (0-1, where 1 = no decay, 0 = maximum decay)
+    decay_rate: 0.5
+    # Use attribution window from global settings
+    use_attribution_window: true
+    # Reference point for decay calculation ('conversion' or 'latest')
+    decay_reference: "conversion"
+    
+  # U-Shaped Attribution
+  u_shaped:
+    description: "Assigns 40% to first touch, 40% to last touch, 20% distributed among middle touches"
+    requires_conversion: true
+    min_touchpoints: 1
+    # Percentage for first touch (0-1)
+    first_touch_weight: 0.4
+    # Percentage for last touch (0-1)
+    last_touch_weight: 0.4
+    # Remaining percentage distributed among middle touches
+    # middle_touch_weight is calculated as: 1 - first_touch_weight - last_touch_weight
+    
+  # Windowed First Touch Attribution
+  windowed_first_touch:
+    description: "Assigns 100% credit to the first touch within the attribution window"
+    requires_conversion: true
+    min_touchpoints: 1
+    # Use attribution window from global settings
+    use_attribution_window: true
+    # Whether to require the first touch to be within the window
+    strict_window: true
+
+# Data validation settings
+validation:
+  # Required columns in input data
+  required_columns:
+    - "user_id"
+    - "touchpoint_id" 
+    - "channel"
+    - "timestamp"
+    
+  # Optional columns that will be used if present
+  optional_columns:
+    - "conversion"
+    - "conversion_value"
+    - "campaign"
+    - "creative"
+    - "keyword"
+    
+  # Data type validation
+  column_types:
+    user_id: "string"
+    touchpoint_id: "string"
+    channel: "string"
+    timestamp: "datetime"
+    conversion: "boolean"
+    conversion_value: "numeric"
+    
+  # Value constraints
+  constraints:
+    # Attribution window constraints
+    attribution_window_days:
+      min: 1
+      max: 365
+      
+    # Decay rate constraints  
+    decay_rate:
+      min: 0.0
+      max: 1.0
+      
+    # Conversion value constraints
+    conversion_value:
+      min: 0.0
+      
+    # U-shaped weight constraints
+    u_shaped_weights:
+      first_touch_weight:
+        min: 0.0
+        max: 1.0
+      last_touch_weight:
+        min: 0.0
+        max: 1.0
+      # first_touch_weight + last_touch_weight must be <= 1.0
+
+# Output settings
+output:
+  # Default columns to include in attribution results
+  result_columns:
+    - "user_id"
+    - "touchpoint_id"
+    - "channel"
+    - "timestamp"
+    - "conversion"
+    - "attribution_score"
+    - "attribution_percentage"
+    - "model_name"
+    
+  # Whether to include original data columns
+  include_original_columns: true
+  
+  # Whether to calculate attribution value (requires conversion_value)
+  calculate_attribution_value: true
+  
+  # Number of decimal places for attribution scores
+  score_precision: 6
+  
+  # Whether to sort results by timestamp
+  sort_by_timestamp: true
+
+# Performance settings
+performance:
+  # Maximum number of touchpoints to process in a single batch
+  max_batch_size: 10000
+  
+  # Whether to use parallel processing for large datasets
+  enable_parallel_processing: false
+  
+  # Number of parallel workers (if enabled)
+  num_workers: 4
+  
+  # Memory usage warnings
+  memory_warning_threshold_mb: 1000
+
+# Logging settings
+logging:
+  # Default log format
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  
+  # Date format
+  date_format: "%Y-%m-%d %H:%M:%S"
+  
+  # Whether to include timestamps
+  include_timestamp: true
+  
+  # Whether to use JSON format for structured logging
+  json_format: false
+  
+  # Log file settings (optional)
+  file_logging:
+    enabled: false
+    filename: "pyattrscore.log"
+    max_size_mb: 10
+    backup_count: 5
+
+# Feature flags
+features:
+  # Enable experimental features
+  experimental_models: false
+  
+  # Enable advanced validation
+  strict_validation: true
+  
+  # Enable performance monitoring
+  performance_monitoring: false
+  
+  # Enable caching for repeated calculations
+  enable_caching: false
