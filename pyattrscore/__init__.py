@@ -9,7 +9,7 @@ Version: 1.0.0
 License: MIT
 """
 
-__version__ = "0.0.3"
+__version__ = "0.0.4"
 __author__ = "Mani Gidijala"
 __email__ = ""
 __license__ = "MIT"

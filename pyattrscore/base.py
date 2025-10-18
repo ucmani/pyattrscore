@@ -114,12 +114,13 @@ class AttributionModel(ABC):
             
         # Convert to TouchpointData objects for validation
         touchpoints = []
-        for _, row in data.iterrows():
+        for idx, row in data.iterrows():
             try:
                 touchpoint = TouchpointData(**row.to_dict())
                 touchpoints.append(touchpoint)
             except Exception as e:
-                raise ValueError(f"Invalid data in row {row.name}: {str(e)}")
+                from .exceptions import AttributionCalculationError
+                raise AttributionCalculationError(f"Invalid data in row {idx}: {str(e)}")
                 
         return touchpoints
     

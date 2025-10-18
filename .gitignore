@@ -22,3 +22,7 @@ venv/
 .vscode/
 .idea/
 *.swp
+
+.coverage
+coverage.xml
+htmlcov
