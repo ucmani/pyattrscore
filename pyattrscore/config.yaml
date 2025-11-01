@@ -9,6 +9,9 @@ global:
   # Whether to include non-converting user journeys in analysis
   include_non_converting_paths: false
   
+  # Whether to exclude touchpoints that occur after a conversion
+  exclude_post_conversion_touchpoints: true
+  
   # Minimum number of touchpoints required for attribution
   min_touchpoints: 1
   
@@ -131,8 +134,8 @@ models:
     # Football metrics configuration
     metrics:
       # Expected Goals (xG) calculation weights
-      conversion_xg_weight: 0.8     # Weight for actual conversions
-      non_conversion_xg_weight: 0.1 # Weight for non-conversions
+      conversion_xg_weight: 0.8     # Weight for actual conversions (should be <= 1.0)
+      non_conversion_xg_weight: 0.1 # Weight for non-conversions (should be <= 1.0)
       
       # Expected Assists (xA) calculation weights
       assister_xa_weight: 0.7       # Weight for assister role

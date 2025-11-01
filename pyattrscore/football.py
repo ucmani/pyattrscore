@@ -72,6 +72,10 @@ class FootballAttributionConfig(AttributionConfig):
     cold_lead_threshold_days: int = 7    # Days to consider a lead "cold"
     engagement_time_weight: float = 1.0  # Weight for engagement time calculation
     
+    # Expected Goals (xG) calculation weights
+    conversion_xg_weight: float = 0.8     # Weight for actual conversions
+    non_conversion_xg_weight: float = 0.1  # Weight for non-conversions
+    
     # Channel archetype mapping (can be customized)
     channel_archetypes: Optional[Dict[str, str]] = None
     
@@ -166,7 +170,9 @@ class FootballAttribution(AttributionModel):
             
         super().__init__(config)
         self.football_config = config
+            
         logger.info(f"Initialized Football Attribution model with {self.config.attribution_window_days}-day window")
+        logger.info(f"Post-conversion touchpoints exclusion: {self.config.exclude_post_conversion_touchpoints}")
     
     def calculate_attribution(self, data: pd.DataFrame) -> pd.DataFrame:
         """
@@ -314,8 +320,8 @@ class FootballAttribution(AttributionModel):
         return converting_users
     
     def _calculate_user_football_attribution(
-        self, 
-        touchpoints: List[TouchpointData], 
+        self,
+        touchpoints: List[TouchpointData],
         original_data: pd.DataFrame
     ) -> Tuple[List[Dict[str, Any]], Dict[str, FootballMetrics]]:
         """
@@ -339,8 +345,41 @@ class FootballAttribution(AttributionModel):
         if not conversion_touchpoints:
             return [], {}
         
-        # Filter touchpoints within attribution window
-        windowed_touchpoints = self.filter_by_attribution_window(sorted_touchpoints)
+        # Filter touchpoints within attribution window and exclude post-conversion touchpoints if configured
+        exclude_post_conversion = self.config.exclude_post_conversion_touchpoints
+        
+        # Manual implementation of post-conversion exclusion
+        if exclude_post_conversion:
+            # First, get all touchpoints within the attribution window
+            windowed_touchpoints = self.filter_by_attribution_window(sorted_touchpoints)
+            
+            # Then filter out post-conversion touchpoints
+            if conversion_touchpoints:
+                # Sort conversion touchpoints by timestamp
+                sorted_conversions = sorted(conversion_touchpoints, key=lambda x: x.timestamp)
+                filtered_touchpoints = []
+                
+                for tp in windowed_touchpoints:
+                    # Check if this touchpoint occurs after any conversion (except itself)
+                    is_post_conversion = False
+                    for conv_tp in sorted_conversions:
+                        # Skip if this is the conversion touchpoint itself
+                        if tp.touchpoint_id == conv_tp.touchpoint_id:
+                            continue
+                        # If touchpoint is after a conversion, mark it as post-conversion
+                        if tp.timestamp > conv_tp.timestamp:
+                            is_post_conversion = True
+                            break
+                    
+                    # Include touchpoint only if it's not post-conversion
+                    if not is_post_conversion:
+                        filtered_touchpoints.append(tp)
+                
+                windowed_touchpoints = filtered_touchpoints
+        else:
+            # Just use the regular attribution window filtering
+            windowed_touchpoints = self.filter_by_attribution_window(sorted_touchpoints)
+            
         if not windowed_touchpoints:
             return [], {}
         
@@ -523,10 +562,10 @@ class FootballAttribution(AttributionModel):
         return cis
     
     def _update_channel_metrics(
-        self, 
-        metrics: FootballMetrics, 
-        touchpoint: TouchpointData, 
-        roles: List[str], 
+        self,
+        metrics: FootballMetrics,
+        touchpoint: TouchpointData,
+        roles: List[str],
         cis_score: float,
         original_data: pd.DataFrame
     ):
@@ -548,23 +587,29 @@ class FootballAttribution(AttributionModel):
         
         # Update engagement time
         original_row = original_data[
-            (original_data['user_id'] == touchpoint.user_id) & 
+            (original_data['user_id'] == touchpoint.user_id) &
             (original_data['touchpoint_id'] == touchpoint.touchpoint_id)
         ]
         if not original_row.empty:
             engagement_time = original_row.iloc[0]['engagement_time']
             metrics.minutes += engagement_time
         
-        # Calculate expected goals and assists (simplified)
+        # Calculate expected goals and assists using config values
+        config = self.football_config
+            
+        # Calculate expected goals based on touchpoint type
         if touchpoint.conversion:
-            metrics.expected_goals += 0.8  # High probability for actual conversions
+            # For conversion touchpoints, use the conversion weight
+            metrics.expected_goals = config.conversion_xg_weight
         else:
-            metrics.expected_goals += 0.1  # Low probability for non-conversions
+            # For non-conversion touchpoints, use the non-conversion weight
+            metrics.expected_goals = config.non_conversion_xg_weight
         
+        # Calculate expected assists based on role
         if FootballRole.ASSISTER.value in roles:
-            metrics.expected_assists += 0.7
+            metrics.expected_assists = 0.7
         elif FootballRole.KEY_PASSER.value in roles:
-            metrics.expected_assists += 0.3
+            metrics.expected_assists = 0.3
     
     def _aggregate_metrics(self, target: FootballMetrics, source: FootballMetrics):
         """Aggregate metrics from source to target."""
@@ -574,8 +619,12 @@ class FootballAttribution(AttributionModel):
         target.passes += source.passes
         target.minutes += source.minutes
         target.dribbles += source.dribbles
-        target.expected_goals += source.expected_goals
-        target.expected_assists += source.expected_assists
+        
+        # For expected goals and assists, take the maximum value instead of summing
+        # This prevents the sum from exceeding 1.0
+        target.expected_goals = max(target.expected_goals, source.expected_goals)
+        target.expected_assists = max(target.expected_assists, source.expected_assists)
+        
         target.channel_impact_score += source.channel_impact_score
     
     def _add_football_metrics_to_result(

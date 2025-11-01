@@ -11,13 +11,18 @@ PyAttrScore is a Python package designed to calculate marketing attribution scor
 ## 🚀 Features
 
 - **Multiple Attribution Models**: First Touch, Last Touch, Linear, Time Decay (Exponential & Linear), U-Shaped, Windowed First Touch, and **Football-Inspired Attribution**
-- **🏈 Football Attribution**: Revolutionary model that treats marketing channels like football players with roles (Scorer, Assister, Key Passer) and calculates Channel Impact Score (CIS)
-- **Production Ready**: Comprehensive error handling, logging, and validation
-- **Flexible Configuration**: YAML-based configuration with customizable parameters
-- **Data Validation**: Built-in Pydantic models for robust data validation
-- **Comprehensive Testing**: 90%+ test coverage with pytest
-- **Easy Integration**: Simple API for integration into existing analytics pipelines
-- **Performance Optimized**: Efficient algorithms for large-scale data processing
+- **🏈 Football Attribution Model**: Treats marketing channels as football players with distinct roles (Scorer, Assister, Key Passer, Most Passes, Most Minutes, Most Dribbles, Participant) and calculates a Channel Impact Score (CIS) based on role weights
+- **Role-Based Attribution**: Assigns credit based on channel roles in the customer journey, providing intuitive team-based insights
+- **Channel Archetypes**: Classifies channels into Generator, Assister, Closer, and Participant archetypes for strategic analysis
+- **Configurable Role Weights**: Customize the impact of each football role on the CIS calculation
+- **Comprehensive Channel Metrics**: Includes goals, assists, key passes, engagement time, expected goals, and more
+- **Production Ready**: Robust error handling, logging, and validation for reliable use in analytics pipelines
+- **Flexible Configuration**: YAML-based and programmatic configuration options for all models
+- **Data Validation**: Built-in Pydantic models ensure input data integrity
+- **Comprehensive Testing**: Over 90% test coverage with pytest for confidence in results
+- **Easy Integration**: Simple API design for seamless integration into existing workflows
+- **Performance Optimized**: Efficient algorithms designed for large-scale data processing
+- **Advanced Analytics**: Team performance summaries, role-based channel analysis, and batch processing support
 
 ## 📦 Installation
 
@@ -243,8 +248,9 @@ results = model.calculate_attribution(data)
 - Time-bounded first touch analysis
 - Focusing on relevant touchpoints
 
-### 7. 🏈 Football-Inspired Attribution
-A revolutionary attribution model that treats marketing channels like football players, assigning roles and calculating Channel Impact Score (CIS) based on team play concepts.
+### 7. 🏈 Football-Based Attribution Model (Improved Definition)
+
+The Football-Based Attribution Model applies a football (soccer) metaphor to marketing attribution, treating marketing channels as players on a football team. Each channel is assigned a role based on its contribution to the customer journey, and a Channel Impact Score (CIS) is calculated to quantify its overall impact.
 
 ```python
 from pyattrscore import FootballAttribution, FootballAttributionConfig
@@ -255,10 +261,10 @@ config = FootballAttributionConfig(
     scorer_weight=0.25,      # Final conversion touchpoint
     assister_weight=0.20,    # Setup touchpoint before conversion
     key_passer_weight=0.15,  # Journey initiator
-    most_passes_weight=0.15, # Most frequent engagement
+    most_passes_weight=0.14, # Most frequent engagement
     most_minutes_weight=0.10, # Longest engagement time
     most_dribbles_weight=0.10, # Cold lead revival
-    participant_weight=0.05,  # Supporting touchpoint
+    participant_weight=0.06,  # Supporting touchpoint
     baseline_weight=0.1,
     cold_lead_threshold_days=7
 )
@@ -271,42 +277,41 @@ summary = model.get_channel_performance_summary(results)
 print(summary)
 ```
 
-**Football Roles:**
-- **Scorer**: Final conversion touchpoint (like a striker finishing the goal)
-- **Assister**: Setup touchpoint before conversion (like a midfielder creating the opportunity)
-- **Key Passer**: Journey initiator (like a defender starting the play)
-- **Most Passes**: Channel with most frequent engagement
-- **Most Minutes**: Channel with longest engagement time
-- **Most Dribbles**: Channel that revives cold leads
+### Football Roles and Their Marketing Analogies
 
-**Channel Archetypes:**
-- **Generator**: Creates awareness, starts plays (e.g., Organic Search, Social Media)
-- **Assister**: Nurtures and sets up conversions (e.g., Email, Paid Search)
-- **Closer**: Finishes conversions (e.g., Direct, Referral)
-- **Participant**: Supporting role
+- **Scorer**: The final touchpoint that directly leads to conversion, analogous to the striker who scores the goal.
+- **Assister**: The touchpoint immediately preceding the conversion, setting up the "goal," similar to a midfielder providing an assist.
+- **Key Passer**: The journey initiator, the first touchpoint that starts the conversion build-up, like a defender or playmaker starting the play.
+- **Most Passes**: The channel with the highest frequency of engagement, representing consistent involvement.
+- **Most Minutes**: The channel with the longest engagement time, indicating sustained interaction.
+- **Most Dribbles**: The channel that revives cold leads, re-engaging users after inactivity.
+- **Participant**: Supporting touchpoints that contribute but do not fit the above roles.
 
-**Use Cases:**
-- Team-based marketing attribution
-- Intuitive stakeholder communication using football metaphors
-- Role-based channel optimization
-- Understanding channel collaboration in conversion journeys
-- Budget allocation based on "team performance"
+### Channel Archetypes
 
-**Example Output:**
+Channels are classified into archetypes based on their typical marketing role:
+
+- **Generator**: Creates awareness and initiates plays (e.g., Organic Search, Social Media).
+- **Assister**: Nurtures and sets up conversions (e.g., Email, Paid Search).
+- **Closer**: Finishes conversions (e.g., Direct, Referral).
+- **Participant**: Supporting roles that assist the team.
+
+### Channel Impact Score (CIS) Formula
+
+The CIS quantifies the contribution of each channel by combining a baseline weight with weighted role contributions:
+
 ```
-🏈 FOOTBALL ATTRIBUTION RESULTS
-Channel         Role                    CIS Score    Archetype
-organic_search  key_passer, most_passes    34.7%     generator
-paid_search     assister                   26.3%     assister  
-referral        scorer, most_minutes       39.0%     closer
+CIS = baseline_weight + (1 - baseline_weight) × Σ(role_weight × role_indicator)
 ```
 
-**Channel Impact Score (CIS) Formula:**
-```
-CIS = baseline_weight + (1 - baseline_weight) × (role_weights_sum)
+Where:
 
-Where role_weights_sum = Σ(role_weight × role_indicator)
-```
+- `baseline_weight` is a minimum credit assigned to all touchpoints.
+- `role_weight` is the predefined weight for each football role.
+- `role_indicator` is 1 if the channel has the role, 0 otherwise.
+
+This formula ensures that channels with key roles receive higher attribution while all channels receive some baseline credit.
+
 
 ## ⚙️ Configuration
 
@@ -615,5 +620,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - Built with [pandas](https://pandas.pydata.org/), [numpy](https://numpy.org/), and [pydantic](https://pydantic-docs.helpmanual.io/)
 - Inspired by marketing attribution research and football analytics
-- Thanks to all contributors and the open-source community
-

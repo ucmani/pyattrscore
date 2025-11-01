@@ -55,10 +55,12 @@ class AttributionConfig(BaseModel):
         attribution_window_days: Number of days to look back for attributions
         decay_rate: Rate of decay for time-based models (0-1)
         include_non_converting_paths: Whether to include paths without conversions
+        exclude_post_conversion_touchpoints: Whether to exclude touchpoints after conversions
     """
     attribution_window_days: int = Field(default=30, ge=1, le=365)
     decay_rate: float = Field(default=0.5, ge=0.0, le=1.0)
     include_non_converting_paths: bool = Field(default=False)
+    exclude_post_conversion_touchpoints: bool = Field(default=True)
     
     @validator('attribution_window_days')
     def validate_window(cls, v):
@@ -124,12 +126,13 @@ class AttributionModel(ABC):
                 
         return touchpoints
     
-    def filter_by_attribution_window(self, touchpoints: List[TouchpointData]) -> List[TouchpointData]:
+    def filter_by_attribution_window(self, touchpoints: List[TouchpointData], exclude_post_conversion: bool = False) -> List[TouchpointData]:
         """
         Filter touchpoints based on attribution window.
         
         Args:
             touchpoints: List of touchpoint data
+            exclude_post_conversion: Whether to exclude touchpoints after each conversion
             
         Returns:
             Filtered list of touchpoints within attribution window
@@ -147,9 +150,33 @@ class AttributionModel(ABC):
         
         # Filter touchpoints within window
         filtered_touchpoints = [
-            tp for tp in touchpoints 
+            tp for tp in touchpoints
             if tp.timestamp >= window_start and tp.timestamp <= latest_conversion
         ]
+        
+        # If exclude_post_conversion is True, exclude touchpoints that occur after any conversion
+        if exclude_post_conversion:
+            # Sort conversion touchpoints by timestamp
+            sorted_conversions = sorted(conversion_touchpoints, key=lambda x: x.timestamp)
+            valid_touchpoints = []
+            
+            for tp in filtered_touchpoints:
+                # Check if this touchpoint occurs after any conversion (except itself)
+                is_post_conversion = False
+                for conv_tp in sorted_conversions:
+                    # Skip if this is the conversion touchpoint itself
+                    if tp.touchpoint_id == conv_tp.touchpoint_id:
+                        continue
+                    # If touchpoint is after a conversion, mark it as post-conversion
+                    if tp.timestamp > conv_tp.timestamp:
+                        is_post_conversion = True
+                        break
+                
+                # Include touchpoint only if it's not post-conversion
+                if not is_post_conversion:
+                    valid_touchpoints.append(tp)
+            
+            return valid_touchpoints
         
         return filtered_touchpoints
     
